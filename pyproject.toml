@@ -1,0 +1,14 @@
+[project]
+name = "ml-wikitutor-rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "langchain-core>=1.2.15",
+    "langchain-openai>=1.1.10",
+    "python-dotenv>=1.2.1",
+    "streamlit>=1.54.0",
+    "tiktoken>=0.12.0",
+    "zvec>=0.2.0",
+]
