@@ -56,7 +56,7 @@ def load_chunks(limit: int | None = None):
             rows.append(json.loads(line))
     return rows
 
-def embed_with_retry(embs, texts, retries=5):
+def embed_with_retry(emb, texts, retries=5):
     """
     Embed with retry logic. Make indexing more resilient 
     """
@@ -85,7 +85,7 @@ def main(limit: int | None = None, batch_size: int = 64):
     for start in range(0, len(chunks), batch_size):
         batch = chunks[start:start + batch_size]
         texts = [r["text"] for r in batch]
-        vectors = embed_with_retry(texts)
+        vectors = embed_with_retry(emb, texts)
 
         zdocs = []
         for r, v in zip(batch, vectors):

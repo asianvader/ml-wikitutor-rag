@@ -1,0 +1,10 @@
+{"id":"q1","question":"What is the difference between supervised and unsupervised learning?","expect_source_contains":["Supervised learning","Unsupervised learning"]}
+{"id":"q2","question":"What is PCA used for?","expect_source_contains":["Principal component analysis"]}
+{"id":"q3","question":"What is overfitting?","expect_source_contains":["Overfitting"]}
+{"id":"q4","question":"What is the difference between precision and recall?","expect_source_contains":["Precision and recall"]}
+{"id":"q5","question":"What is a confusion matrix?","expect_source_contains":["Confusion matrix"]}
+{"id":"q6","question":"What is gradient boosting?","expect_source_contains":["Gradient boosting"]}
+{"id":"q7","question":"Explain L1 vs L2 regularization.","expect_source_contains":["Regularization"]}
+{"id":"q8","question":"What is a transformer in machine learning?","expect_source_contains":["Transformer (deep learning)"]}
+{"id":"q9","question":"What is k-means clustering?","expect_source_contains":["K-means clustering"]}
+{"id":"q10","question":"What is the capital of France?","expect_refusal":true}

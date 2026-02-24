@@ -98,4 +98,4 @@ def main(limit: int | None = 20):
         print("Output:", out_path)
 
 if __name__ == "__main__":
-    main()
+    main(limit=None)
