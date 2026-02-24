@@ -23,19 +23,27 @@ if submitted:
         st.warning("Enter a question first.")
     else:
         with st.spinner("Retrieving and generating answer..."):
-            answer, hits = generate_answer(question, k=k)
+            answer, sources, hits = generate_answer(question, k=k)
 
         st.subheader("Answer")
         st.write(answer)
 
         st.subheader("Sources")
-        for i, h in enumerate(hits, start=1):
-            title = h.fields.get("title")
-            url = h.fields.get("source_url")
-            score = getattr(h, "score", None)
 
-            # Safer display if url is missing
-            if url:
-                st.markdown(f"**{i}. {title}** — Score: `{score}`  \n{url}")
-            else:
-                st.markdown(f"**{i}. {title}** — Score: `{score}`")
+        for s in sources:
+            st.markdown(
+                f"**[{s['n']}] {s['title']}**  \n"
+                f"Score: `{s['score']}`  \n"
+                f"{s['url']}"
+            )
+
+            with st.expander(f"Preview [{s['n']}]"):
+                st.write(s["preview"])
+
+        with st.expander("🔎 Raw Retrieval Debug"):
+            for i, h in enumerate(hits, start=1):
+                st.write(
+                    i,
+                    h.fields.get("title"),
+                    getattr(h, "score", None)
+                )
