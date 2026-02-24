@@ -1,10 +1,11 @@
 import json
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
-
 import zvec
 from langchain_openai import OpenAIEmbeddings
+import time
+
+load_dotenv()
 
 CHUNKS_PATH = Path("data_processed/chunks.jsonl")
 ZVEC_PATH = "index/zvec_wiki_ml"
@@ -55,6 +56,19 @@ def load_chunks(limit: int | None = None):
             rows.append(json.loads(line))
     return rows
 
+def embed_with_retry(embs, texts, retries=5):
+    """
+    Embed with retry logic. Make indexing more resilient 
+    """
+    for attempt in range(retries):
+        try:
+            return emb.embed_documents(texts)
+        except Exception as e:
+            wait = 2 ** attempt
+            print(f"Embedding batch failed ({type(e).__name__}). Retrying in {wait}s...")
+            time.sleep(wait)
+    # last attempt (raise)
+    return emb.embed_documents(embs, texts)
 
 def main(limit: int | None = None, batch_size: int = 64):
     if not CHUNKS_PATH.exists():
@@ -71,7 +85,7 @@ def main(limit: int | None = None, batch_size: int = 64):
     for start in range(0, len(chunks), batch_size):
         batch = chunks[start:start + batch_size]
         texts = [r["text"] for r in batch]
-        vectors = emb.embed_documents(texts)
+        vectors = embed_with_retry(texts)
 
         zdocs = []
         for r, v in zip(batch, vectors):
