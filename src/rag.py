@@ -40,7 +40,6 @@ QUESTION:
 """
 )
 
-
 def _token_len(text: str) -> int:
     return len(_enc.encode(text or ""))
 
@@ -186,7 +185,6 @@ def _build_context(
 def generate_answer(question: str, k: int = 15):
     hits = search(question, k=k)
 
-    # choose a diverse subset before building context
     diverse_hits = _select_diverse_hits(hits, max_per_title=1, max_total=8)
 
     context, sources = _build_context(
@@ -195,8 +193,14 @@ def generate_answer(question: str, k: int = 15):
         max_chunks_per_title=1,
     )
 
+    # compute confidence BEFORE early return
+    confidence = _confidence_from_sources(sources)
+
     chain = _prompt | _llm | _parser
     answer = chain.invoke({"question": question, "context": context})
 
-    confidence = _confidence_from_sources(sources)
+    # hide sources when refusing
+    if "don't have that information in my sources" in answer.lower():
+        return answer, [], hits, confidence
+
     return answer, sources, hits, confidence

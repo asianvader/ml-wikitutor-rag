@@ -28,30 +28,35 @@ if submitted:
         st.subheader("Answer")
         st.write(answer)
 
-        st.markdown(
-            f"**Confidence:** {confidence['label']} "
-            f"({confidence['value']*100:.0f}%)"
-        )
+        # Detect refusal
+        refused = "don't have that information in my sources" in answer.lower()
 
-        st.subheader("Sources")
+        # Only show confidence + sources if not refusal
+        if not refused:
 
-        for s in sources:
             st.markdown(
-                f"**[{s['n']}] {s['title']}**  \n"
-                f"Score: `{s['score']}`  \n"
-                f"{s['url']}"
+                f"**Confidence:** {confidence['label']} "
+                f"({confidence['value']*100:.0f}%)"
             )
 
-            with st.expander(f"Preview [{s['n']}]"):
-                st.write(s["preview"])
+            if sources:
+                st.subheader("Sources")
+                for s in sources:
+                    st.markdown(
+                        f"**[{s['n']}] {s['title']}**  \n"
+                        f"Score: `{s['score']}`  \n"
+                        f"{s['url']}"
+                    )
 
-        with st.expander("🔎 Raw Retrieval Debug"):
-            for i, h in enumerate(hits, start=1):
-                st.write(
-                    i,
-                    h.fields.get("title"),
-                    getattr(h, "score", None)
-                )
+                    with st.expander(f"Preview [{s['n']}]"):
+                        st.write(s["preview"])
 
-        with st.expander("🧪 Debug"):
-            st.json(confidence)
+            # Debug panel
+            with st.expander("🔎 Debug"):
+                st.json(confidence)
+                for i, h in enumerate(hits, start=1):
+                    st.write(
+                        i,
+                        h.fields.get("title"),
+                        getattr(h, "score", None)
+                    )
