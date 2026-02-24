@@ -23,10 +23,14 @@ Use ONLY the provided context to answer the question.
 If the context does not contain enough information to answer, say:
 "I don't have that information in my sources."
 
-Rules:
-- Keep the answer concise and correct.
-- Include citations inline like [1], [2] matching the context blocks.
-- Do not cite sources you did not use.
+Write a clear explanation in **8-12 sentences** (or ~150-250 words).
+Include:
+- a 1-2 sentence direct answer
+- a short example or intuition (when relevant)
+- common pitfalls or trade-offs (when relevant)
+
+Include citations inline like [1], [2] matching the context blocks.
+Do not cite sources you did not use.
 
 CONTEXT:
 {context}
