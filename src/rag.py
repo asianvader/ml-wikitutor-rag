@@ -1,14 +1,11 @@
 from __future__ import annotations
-
-from dotenv import load_dotenv
-load_dotenv()
-
 import tiktoken
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-
 from src.retrieve import search
+from dotenv import load_dotenv
+load_dotenv()
 
 LLM_MODEL = "gpt-4.1-mini"
 _llm = ChatOpenAI(model=LLM_MODEL, temperature=0.2)
@@ -43,6 +40,29 @@ QUESTION:
 def _token_len(text: str) -> int:
     return len(_enc.encode(text or ""))
 
+def _select_diverse_hits(hits, *, max_per_title: int = 2, max_total: int = 12):
+    """
+    Select a diverse subset of hits:
+    - sort by score (lower is better)
+    - keep at most `max_per_title` per title
+    - return at most `max_total` hits
+    """
+    hits_sorted = sorted(hits, key=lambda h: getattr(h, "score", 1e9))
+
+    out = []
+    per_title = {}
+
+    for h in hits_sorted:
+        title = h.fields.get("title") or "Unknown"
+        per_title.setdefault(title, 0)
+        if per_title[title] >= max_per_title:
+            continue
+        out.append(h)
+        per_title[title] += 1
+        if len(out) >= max_total:
+            break
+
+    return out
 
 def _build_context(
     hits,
@@ -114,19 +134,16 @@ def _build_context(
     return "\n\n---\n\n".join(context_parts), sources
 
 
-def generate_answer(question: str, k: int = 10):
-    """
-    RAG:
-      1) retrieve hits from Zvec
-      2) build bounded context + citation map
-      3) LLM answer constrained to context
-    """
+def generate_answer(question: str, k: int = 15):
     hits = search(question, k=k)
 
+    # choose a diverse subset before building context
+    diverse_hits = _select_diverse_hits(hits, max_per_title=1, max_total=8)
+
     context, sources = _build_context(
-        hits,
+        diverse_hits,
         max_context_tokens=3000,
-        max_chunks_per_title=2,
+        max_chunks_per_title=1,
     )
 
     chain = _prompt | _llm | _parser
