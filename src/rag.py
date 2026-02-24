@@ -64,6 +64,51 @@ def _select_diverse_hits(hits, *, max_per_title: int = 2, max_total: int = 12):
 
     return out
 
+def _confidence_from_sources(sources):
+    """
+    Simple heuristic confidence from Zvec cosine distance scores.
+    Lower score = more similar.
+
+    Returns:
+      dict with label + numeric score in [0, 1] + explanation fields
+    """
+    scores = [s["score"] for s in sources if s.get("score") is not None]
+    if not scores:
+        return {"label": "Low", "value": 0.0, "best": None, "worst": None, "reason": "No retrieval scores"}
+
+    best = min(scores)
+    worst = max(scores)
+
+    # Map best score (distance) to a 0.1 confidence value.
+    # These thresholds are empirical; tweak later.
+    # Typical “good” distances often land ~0.25–0.45 in your current setup.
+    if best <= 0.38:
+        label = "High"
+        value = 0.85
+    elif best <= 0.45:
+        label = "Medium"
+        value = 0.65
+    else:
+        label = "Low"
+        value = 0.45
+    # Slightly adjust by spread: if worst is much worse than best, penalize
+    spread = worst - best
+    if spread > 0.20:
+        value -= 0.10
+    if spread > 0.30:
+        value -= 0.10
+
+    # Clamp
+    value = max(0.0, min(1.0, value))
+
+    return {
+        "label": label,
+        "value": value,
+        "best": best,
+        "worst": worst,
+        "spread": spread,
+    }
+
 def _build_context(
     hits,
     *,
@@ -149,4 +194,5 @@ def generate_answer(question: str, k: int = 15):
     chain = _prompt | _llm | _parser
     answer = chain.invoke({"question": question, "context": context})
 
-    return answer, sources, hits
+    confidence = _confidence_from_sources(sources)
+    return answer, sources, hits, confidence

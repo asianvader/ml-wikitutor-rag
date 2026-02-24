@@ -23,10 +23,15 @@ if submitted:
         st.warning("Enter a question first.")
     else:
         with st.spinner("Retrieving and generating answer..."):
-            answer, sources, hits = generate_answer(question, k=k)
+            answer, sources, hits, confidence = generate_answer(question, k=k)
 
         st.subheader("Answer")
         st.write(answer)
+
+        st.markdown(
+            f"**Confidence:** {confidence['label']} "
+            f"({confidence['value']*100:.0f}%)"
+        )
 
         st.subheader("Sources")
 
@@ -47,3 +52,6 @@ if submitted:
                     h.fields.get("title"),
                     getattr(h, "score", None)
                 )
+
+        with st.expander("🧪 Debug"):
+            st.json(confidence)
