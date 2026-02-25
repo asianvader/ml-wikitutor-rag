@@ -1,5 +1,7 @@
 # ML WikiTutor (RAG Prototype)
 
+![Home screen](docs/screenshots/ml-wikitutor.png)
+
 A lightweight **Retrieval-Augmented Generation (RAG)** prototype that lets you “chat” with a curated Machine Learning / Data Science / AI knowledge base built from Wikipedia articles.
 
 - **Vector DB:** Zvec (local, file-based)

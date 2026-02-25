@@ -3,3 +3,4 @@ __pycache__/
 index/
 data_raw/
 data_processed/
+.DS_Store
