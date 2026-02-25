@@ -134,10 +134,12 @@ Create a file named .env in the project root:
 ### 4) Install dependencies
 
 ```uv sync```
+
 ---
 
-## Build the knowledge base (ingest + index)
-### One-command rebuild
+### 5) Build the knowledge base (ingest + index)
+
+#### One-command rebuild
 ```./scripts/rebuild_index.sh```
 
 This will:
@@ -147,7 +149,7 @@ Fetch Wikipedia pages and write `data_processed/chunks.jsonl`
 Build a fresh Zvec vector index under `index/zvec_wiki_ml`
 
 ---
-## Run the App
+### 6) Run the App
 ```uv run streamlit run app.py```
 
 ---
