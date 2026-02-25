@@ -123,24 +123,32 @@ pip install uv
 
 Create a file named .env in the project root:
 
-```touch .env```
+```
+touch .env
+```
 
 #### Add your OpenAI API key:
 
-```OPENAI_API_KEY="your_openai_api_key_here"```
+```
+OPENAI_API_KEY="your_openai_api_key_here"
+```
 
 #### Add your .env file to .gitignore
 
 ### 4) Install dependencies
 
-```uv sync```
+```
+uv sync
+```
 
 ---
 
 ### 5) Build the knowledge base (ingest + index)
 
 #### One-command rebuild
-```./scripts/rebuild_index.sh```
+```
+./scripts/rebuild_index.sh
+```
 
 This will:
 
@@ -150,7 +158,9 @@ Build a fresh Zvec vector index under `index/zvec_wiki_ml`
 
 ---
 ### 6) Run the App
-```uv run streamlit run app.py```
+```
+uv run streamlit run app.py
+```
 
 ---
 ## Notes / limitations
