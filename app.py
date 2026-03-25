@@ -3,12 +3,21 @@ from src.rag import generate_answer
 
 st.set_page_config(page_title="ML WikiTutor", page_icon="📚", layout="wide")
 
-st.title("📚 ML WikiTutor")
-st.write("Retrieval demo (Zvec + OpenAI embeddings).")
+st.markdown("""
+<style>
+/* slightly tighter layout */
+.block-container { padding-top: 2rem; padding-bottom: 2rem; max-width: 900px; }
 
-with st.sidebar:
-    st.header("Settings")
-    k = st.slider("Top-K", 1, 15, 8)
+/* make headers a bit cleaner */
+h1 { margin-bottom: 0.25rem; }
+</style>
+""", unsafe_allow_html=True)
+
+st.title("📚 ML WikiTutor")
+st.write("Ask questions about Machine Learning, Data Science, and AI using a curated Wikipedia knowledge base.")
+
+with st.expander("Settings", expanded=False):
+    k = st.number_input("Top-K", min_value=1, max_value=30, value=12, step=1)
 
 # Put input + submit in a form so Enter works
 with st.form("ask_form", clear_on_submit=False):
