@@ -1,10 +1,33 @@
-{"id":"q1","question":"What is the difference between supervised and unsupervised learning?","expect_source_contains":["Supervised learning","Unsupervised learning"]}
-{"id":"q2","question":"What is PCA used for?","expect_source_contains":["Principal component analysis"]}
-{"id":"q3","question":"What is overfitting?","expect_source_contains":["Overfitting"]}
-{"id":"q4","question":"What is the difference between precision and recall?","expect_source_contains":["Precision and recall"]}
-{"id":"q5","question":"What is a confusion matrix?","expect_source_contains":["Confusion matrix"]}
-{"id":"q6","question":"What is gradient boosting?","expect_source_contains":["Gradient boosting"]}
-{"id":"q7","question":"Explain L1 vs L2 regularization.","expect_source_contains":["Regularization"]}
-{"id":"q8","question":"What is a transformer in machine learning?","expect_source_contains":["Transformer (deep learning)"]}
-{"id":"q9","question":"What is k-means clustering?","expect_source_contains":["K-means clustering"]}
-{"id":"q10","question":"What is the capital of France?","expect_refusal":true}
+{"id":"q1","question":"What is the difference between supervised and unsupervised learning?","relevant_titles":["Supervised learning","Unsupervised learning","Machine learning","Semi-supervised learning"],"expect_source_contains":["Supervised learning","Unsupervised learning"]}
+{"id":"q2","question":"What is PCA used for?","relevant_titles":["Principal component analysis","Dimensionality reduction","Feature selection"],"expect_source_contains":["Principal component analysis"]}
+{"id":"q3","question":"What is overfitting and how can it be prevented?","relevant_titles":["Overfitting","Bias–variance tradeoff","Regularization (mathematics)","Cross-validation (statistics)","Dropout (neural networks)"],"expect_source_contains":["Overfitting"]}
+{"id":"q4","question":"What is the difference between precision and recall?","relevant_titles":["Precision and recall","F-score","Confusion matrix","Receiver operating characteristic"],"expect_source_contains":["Precision and recall"]}
+{"id":"q5","question":"What is a confusion matrix?","relevant_titles":["Confusion matrix","Precision and recall","F-score","Sensitivity and specificity"],"expect_source_contains":["Confusion matrix"]}
+{"id":"q6","question":"What is gradient boosting?","relevant_titles":["Gradient boosting","Boosting (machine learning)","Ensemble learning","Decision tree learning","XGBoost"],"expect_source_contains":["Gradient boosting"]}
+{"id":"q7","question":"Explain L1 vs L2 regularization.","relevant_titles":["Regularization (mathematics)","Lasso (statistics)","Ridge regression","Overfitting"],"expect_source_contains":["Regularization"]}
+{"id":"q8","question":"What is a transformer in machine learning?","relevant_titles":["Transformer (deep learning)","Attention (machine learning)","Neural network (machine learning)","Multi-head attention"],"expect_source_contains":["Transformer (deep learning)"]}
+{"id":"q9","question":"What is k-means clustering?","relevant_titles":["K-means clustering","Data clustering","Unsupervised learning","Hierarchical clustering"],"expect_source_contains":["K-means clustering"]}
+{"id":"q10","question":"How does backpropagation work?","relevant_titles":["Backpropagation","Neural network (machine learning)","Gradient descent","Loss function"],"expect_source_contains":["Backpropagation"]}
+{"id":"q11","question":"What is a random forest?","relevant_titles":["Random forest","Decision tree learning","Ensemble learning","Boosting (machine learning)"],"expect_source_contains":["Random forest"]}
+{"id":"q12","question":"What is reinforcement learning?","relevant_titles":["Reinforcement learning","Q-learning","Policy gradient method","Markov decision process","Multi-agent reinforcement learning"],"expect_source_contains":["Reinforcement learning"]}
+{"id":"q13","question":"What is transfer learning?","relevant_titles":["Transfer learning","Fine-tuning (deep learning)","Feature learning","Pre-training (machine learning)"],"expect_source_contains":["Transfer learning"]}
+{"id":"q14","question":"What is a generative adversarial network?","relevant_titles":["Generative adversarial network","Generative model","Deep learning","Variational autoencoder"],"expect_source_contains":["Generative adversarial network"]}
+{"id":"q15","question":"What is word embedding?","relevant_titles":["Word embedding","Word2vec","Natural language processing","Embedding"],"expect_source_contains":["Word embedding"]}
+{"id":"q16","question":"What is the vanishing gradient problem?","relevant_titles":["Vanishing gradient problem","Backpropagation","Long short-term memory","Recurrent neural network"],"expect_source_contains":["Vanishing gradient problem"]}
+{"id":"q17","question":"What is stochastic gradient descent?","relevant_titles":["Stochastic gradient descent","Gradient descent","Optimization (mathematics)","Learning rate"],"expect_source_contains":["Stochastic gradient descent"]}
+{"id":"q18","question":"What is a recurrent neural network?","relevant_titles":["Recurrent neural network","Long short-term memory","Neural network (machine learning)","Sequence-to-sequence model"],"expect_source_contains":["Recurrent neural network"]}
+{"id":"q19","question":"What is attention in deep learning?","relevant_titles":["Attention (machine learning)","Transformer (deep learning)","Multi-head attention","Neural machine translation"],"expect_source_contains":["Attention (machine learning)"]}
+{"id":"q20","question":"What is the bias-variance tradeoff?","relevant_titles":["Bias–variance tradeoff","Overfitting","Regularization (mathematics)","Generalization (learning)"],"expect_source_contains":["Bias–variance tradeoff"]}
+{"id":"q21","question":"What is logistic regression used for?","relevant_titles":["Logistic regression","Classification","Linear regression","Regression analysis"],"expect_source_contains":["Logistic regression"]}
+{"id":"q22","question":"What is a large language model?","relevant_titles":["Large language model","Language model","GPT (language model)","Transformer (deep learning)","Foundation model"],"expect_source_contains":["Large language model"]}
+{"id":"q23","question":"What is an autoencoder?","relevant_titles":["Autoencoder","Unsupervised learning","Dimensionality reduction","Variational autoencoder"],"expect_source_contains":["Autoencoder"]}
+{"id":"q24","question":"How does batch normalization work?","relevant_titles":["Batch normalization","Neural network (machine learning)","Deep learning","Activation function"],"expect_source_contains":["Batch normalization"]}
+{"id":"q25","question":"What is a support vector machine?","relevant_titles":["Support vector machine","Kernel method","Classification","Supervised learning"],"expect_source_contains":["Support vector machine"]}
+{"id":"q26","question":"What is cross-validation?","relevant_titles":["Cross-validation (statistics)","Overfitting","Bias–variance tradeoff","Model selection"],"expect_source_contains":["Cross-validation (statistics)"]}
+{"id":"q27","question":"What is BERT?","relevant_titles":["BERT (language model)","Masked language model","Transformer (deep learning)","Natural language processing"],"expect_source_contains":["BERT (language model)"]}
+{"id":"q28","question":"What is federated learning?","relevant_titles":["Federated learning","Machine learning","Robustness (machine learning)"],"expect_source_contains":["Federated learning"]}
+{"id":"q29","question":"What is a convolutional neural network?","relevant_titles":["Convolutional neural network","Deep learning","Image segmentation","Object detection","Neural network (machine learning)"],"expect_source_contains":["Convolutional neural network"]}
+{"id":"q30","question":"What is the difference between bagging and boosting?","relevant_titles":["Ensemble learning","Boosting (machine learning)","Random forest","Gradient boosting","Bootstrapping (statistics)"],"expect_source_contains":["Ensemble learning","Boosting (machine learning)"]}
+{"id":"q31","question":"What is the capital of France?","relevant_titles":[],"expect_refusal":true}
+{"id":"q32","question":"Who wrote Romeo and Juliet?","relevant_titles":[],"expect_refusal":true}
+{"id":"q33","question":"What is the speed of light?","relevant_titles":[],"expect_refusal":true}
