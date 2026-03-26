@@ -31,3 +31,6 @@
 {"id":"q31","question":"What is the capital of France?","relevant_titles":[],"expect_refusal":true}
 {"id":"q32","question":"Who wrote Romeo and Juliet?","relevant_titles":[],"expect_refusal":true}
 {"id":"q33","question":"What is the speed of light?","relevant_titles":[],"expect_refusal":true}
+{"id":"q34","question":"Where is Paris located?","relevant_titles":[],"expect_refusal":true}
+{"id":"q35","question":"Who was Napoleon Bonaparte?","relevant_titles":[],"expect_refusal":true}
+{"id":"q36","question":"What happened during the French Revolution?","relevant_titles":[],"expect_refusal":true}

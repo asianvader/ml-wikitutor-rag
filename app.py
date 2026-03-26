@@ -66,7 +66,10 @@ if submitted:
         st.subheader("Answer")
         st.write(answer)
 
-        refused = "don't have that information in my sources" in answer.lower()
+        refused = (
+            "don't have that information in my sources" in answer.lower()
+            or "i can only answer questions about machine learning" in answer.lower()
+        )
 
         if not refused:
             st.markdown(

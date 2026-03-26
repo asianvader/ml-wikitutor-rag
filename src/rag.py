@@ -17,13 +17,15 @@ _enc = tiktoken.get_encoding("cl100k_base")
 
 _prompt = ChatPromptTemplate.from_template(
 """
-You are an ML/AI tutor.
+You are an ML/AI tutor. You ONLY answer questions about machine learning, data science, and AI.
 
-Use ONLY the provided context to answer the question.
-If the context does not contain enough information to answer, say:
+If the question is not about machine learning, data science, or AI — regardless of what the context contains — respond with exactly:
+"I can only answer questions about machine learning, data science, and AI."
+
+If the question is on-topic but the context does not contain enough information to answer, say:
 "I don't have that information in my sources."
 
-Write a clear explanation in **8-12 sentences** (or ~150-250 words).
+Otherwise, write a clear explanation in **8-12 sentences** (or ~150-250 words).
 Include:
 - a 1-2 sentence direct answer
 - a short example or intuition (when relevant)
@@ -209,7 +211,11 @@ def generate_answer(
     answer = chain.invoke({"question": question, "context": context})
 
     # hide sources when refusing
-    if "don't have that information in my sources" in answer.lower():
+    refused = (
+        "don't have that information in my sources" in answer.lower()
+        or "i can only answer questions about machine learning" in answer.lower()
+    )
+    if refused:
         return answer, [], hits, confidence
 
     return answer, sources, hits, confidence

@@ -40,8 +40,11 @@ def check_expectations(q, answer, sources):
             notes.append(f"Missing expected source(s): {expected_titles}")
 
     if q.get("expect_refusal"):
-        refusal_phrase = "I don't have that information in my sources"
-        if refusal_phrase not in answer:
+        refusal_phrases = [
+            "I don't have that information in my sources",
+            "I can only answer questions about machine learning",
+        ]
+        if not any(phrase.lower() in answer.lower() for phrase in refusal_phrases):
             ok = False
             notes.append("Expected refusal, but answer did not refuse.")
 

@@ -53,11 +53,45 @@ def fetch_wikipedia_extract(title: str) -> dict:
     }
 
 
-def main(limit: int | None = None, chunker: str = "token"):
-    titles_path = DATA_RAW / "titles.txt"
-    titles = [t.strip() for t in titles_path.read_text(encoding="utf-8").splitlines() if t.strip()]
+def load_titles(titles_file: str | None) -> list[str]:
+    """
+    Load article titles from one or more sources.
+
+    - If --titles-file is provided, read only that file.
+    - Otherwise, combine:
+        1. data_raw/titles_generated.txt  (ML/AI articles from Category API)
+        2. data_raw/titles.txt            (hand-curated + off-topic noise)
+      deduplicated, preserving order (generated first).
+    """
+    if titles_file:
+        path = Path(titles_file)
+        lines = path.read_text(encoding="utf-8").splitlines()
+        return [t.strip() for t in lines if t.strip()]
+
+    seen: set[str] = set()
+    titles: list[str] = []
+
+    for fname in ("titles_generated.txt", "titles.txt"):
+        path = DATA_RAW / fname
+        if not path.exists():
+            print(f"  [skip] {path} not found")
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            t = line.strip()
+            if t and t not in seen:
+                seen.add(t)
+                titles.append(t)
+        print(f"  [loaded] {path} → {len(titles)} titles so far")
+
+    return titles
+
+
+def main(limit: int | None = None, chunker: str = "token", titles_file: str | None = None):
+    titles = load_titles(titles_file)
+    print(f"Total titles to ingest: {len(titles)}")
     if limit is not None:
         titles = titles[:limit]
+        print(f"  (limited to first {limit})")
 
     # Choose output path and chunking function based on strategy
     if chunker == "semantic":
@@ -130,5 +164,15 @@ if __name__ == "__main__":
         default=None,
         help="Limit to first N titles (useful for testing).",
     )
+    parser.add_argument(
+        "--titles-file",
+        type=str,
+        default=None,
+        help=(
+            "Path to a specific titles file. "
+            "If omitted, combines data_raw/titles_generated.txt (ML/AI) "
+            "and data_raw/titles.txt (noise) automatically."
+        ),
+    )
     args = parser.parse_args()
-    main(limit=args.limit, chunker=args.chunker)
+    main(limit=args.limit, chunker=args.chunker, titles_file=args.titles_file)
