@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from src.rag import generate_answer
 
@@ -19,6 +20,25 @@ st.write("Ask questions about Machine Learning, Data Science, and AI using a cur
 with st.expander("Settings", expanded=False):
     k = st.number_input("Top-K", min_value=1, max_value=30, value=12, step=1)
 
+    chunker = st.radio(
+        "Chunking strategy",
+        options=["token", "semantic"],
+        format_func=lambda x: "Token-based (default)" if x == "token" else "Semantic",
+        horizontal=True,
+        help=(
+            "Token-based: fixed-size chunks with overlap. "
+            "Semantic: splits at points where meaning shifts. "
+            "Requires the semantic index to be built first."
+        ),
+    )
+
+    # Warn if the semantic index doesn't exist yet
+    if chunker == "semantic" and not os.path.exists("index/zvec_wiki_ml_semantic"):
+        st.warning(
+            "⚠️ Semantic index not found. Run `bash scripts/rebuild_index_semantic.sh` first, "
+            "then restart the app."
+        )
+
 # Put input + submit in a form so Enter works
 with st.form("ask_form", clear_on_submit=False):
     question = st.text_input(
@@ -32,7 +52,7 @@ if submitted:
         st.warning("Enter a question first.")
     else:
         with st.spinner("Retrieving and generating answer..."):
-            answer, sources, hits, confidence = generate_answer(question, k=k)
+            answer, sources, hits, confidence = generate_answer(question, k=k, chunker=chunker)
 
         st.subheader("Answer")
         st.write(answer)

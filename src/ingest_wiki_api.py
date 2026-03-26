@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 import requests
@@ -51,13 +52,26 @@ def fetch_wikipedia_extract(title: str) -> dict:
         "text": extract,
     }
 
-def main(limit: int | None = 20):
+
+def main(limit: int | None = None, chunker: str = "token"):
     titles_path = DATA_RAW / "titles.txt"
     titles = [t.strip() for t in titles_path.read_text(encoding="utf-8").splitlines() if t.strip()]
     if limit is not None:
         titles = titles[:limit]
 
-    out_path = DATA_PROCESSED / "chunks.jsonl"
+    # Choose output path and chunking function based on strategy
+    if chunker == "semantic":
+        from src.chunk_semantic import chunk_text_semantic
+        from langchain_openai import OpenAIEmbeddings
+        from dotenv import load_dotenv
+        load_dotenv()
+        emb = OpenAIEmbeddings(model="text-embedding-3-small")
+        out_path = DATA_PROCESSED / "chunks_semantic.jsonl"
+        print(f"Using semantic chunker → {out_path}")
+    else:
+        out_path = DATA_PROCESSED / "chunks.jsonl"
+        print(f"Using token chunker → {out_path}")
+
     total_chunks = 0
     token_counts = []
 
@@ -70,17 +84,21 @@ def main(limit: int | None = 20):
             if not text:
                 continue
 
-            chunks = chunk_text(text, chunk_size=500, overlap=80)
+            if chunker == "semantic":
+                chunks = chunk_text_semantic(text, embeddings=emb)
+            else:
+                chunks = chunk_text(text, chunk_size=500, overlap=80)
 
             for c in chunks:
                 record = {
                     "id": f"wiki_{page['page_id']}_{c.chunk_index}",
                     "title": page["title"],
-                    "section": None,  # we’ll add sectioning later
+                    "section": None,
                     "source_url": page["url"],
                     "chunk_index": c.chunk_index,
                     "token_count": c.token_count,
                     "text": c.text,
+                    "chunker": chunker,
                 }
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
@@ -97,5 +115,20 @@ def main(limit: int | None = 20):
         print("Max tokens/chunk:", max(token_counts))
         print("Output:", out_path)
 
+
 if __name__ == "__main__":
-    main(limit=None)
+    parser = argparse.ArgumentParser(description="Ingest Wikipedia articles into chunks.")
+    parser.add_argument(
+        "--chunker",
+        choices=["token", "semantic"],
+        default="token",
+        help="Chunking strategy: 'token' (default) or 'semantic'.",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limit to first N titles (useful for testing).",
+    )
+    args = parser.parse_args()
+    main(limit=args.limit, chunker=args.chunker)

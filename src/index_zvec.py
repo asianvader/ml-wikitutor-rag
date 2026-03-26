@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 from dotenv import load_dotenv
@@ -7,8 +8,8 @@ import time
 
 load_dotenv()
 
-CHUNKS_PATH = Path("data_processed/chunks.jsonl")
-ZVEC_PATH = "index/zvec_wiki_ml"
+DEFAULT_CHUNKS_PATH = Path("data_processed/chunks.jsonl")
+DEFAULT_ZVEC_PATH = "index/zvec_wiki_ml"
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIM = 1536
@@ -47,19 +48,18 @@ def create_or_open_collection(path: str):
     return col
 
 
-def load_chunks(limit: int | None = None):
+def load_chunks(chunks_path: Path, limit: int | None = None):
     rows = []
-    with CHUNKS_PATH.open("r", encoding="utf-8") as f:
+    with chunks_path.open("r", encoding="utf-8") as f:
         for i, line in enumerate(f):
             if limit is not None and i >= limit:
                 break
             rows.append(json.loads(line))
     return rows
 
+
 def embed_with_retry(emb, texts, retries=5):
-    """
-    Embed with retry logic. Make indexing more resilient 
-    """
+    """Embed with retry logic. Make indexing more resilient."""
     for attempt in range(retries):
         try:
             return emb.embed_documents(texts)
@@ -68,17 +68,23 @@ def embed_with_retry(emb, texts, retries=5):
             print(f"Embedding batch failed ({type(e).__name__}). Retrying in {wait}s...")
             time.sleep(wait)
     # last attempt (raise)
-    return emb.embed_documents(embs, texts)
+    return emb.embed_documents(texts)
 
-def main(limit: int | None = None, batch_size: int = 64):
-    if not CHUNKS_PATH.exists():
-        raise FileNotFoundError(f"Missing {CHUNKS_PATH}. Run ingest_wiki_api first.")
+
+def main(
+    chunks_path: Path = DEFAULT_CHUNKS_PATH,
+    zvec_path: str = DEFAULT_ZVEC_PATH,
+    limit: int | None = None,
+    batch_size: int = 64,
+):
+    if not chunks_path.exists():
+        raise FileNotFoundError(f"Missing {chunks_path}. Run ingest_wiki_api first.")
 
     emb = OpenAIEmbeddings(model=EMBEDDING_MODEL)
-    col = create_or_open_collection(ZVEC_PATH)
+    col = create_or_open_collection(zvec_path)
 
-    chunks = load_chunks(limit=limit)
-    print(f"Loaded {len(chunks)} chunks from {CHUNKS_PATH}")
+    chunks = load_chunks(chunks_path, limit=limit)
+    print(f"Loaded {len(chunks)} chunks from {chunks_path}")
 
     # Insert in batches to reduce API calls overhead and memory spikes
     inserted = 0
@@ -115,9 +121,9 @@ def main(limit: int | None = None, batch_size: int = 64):
     query = "Explain the difference between supervised and unsupervised learning."
     qv = emb.embed_query(query)
     hits = col.query(
-    vectors=zvec.VectorQuery(field_name=VECTOR_FIELD, vector=qv),
-    topk=5
-)
+        vectors=zvec.VectorQuery(field_name=VECTOR_FIELD, vector=qv),
+        topk=5,
+    )
 
     print("\nQuery:", query)
     for h in hits:
@@ -129,4 +135,19 @@ def main(limit: int | None = None, batch_size: int = 64):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Build a Zvec index from a chunks JSONL file.")
+    parser.add_argument(
+        "--chunks-file",
+        type=Path,
+        default=DEFAULT_CHUNKS_PATH,
+        help="Path to the chunks JSONL file (default: data_processed/chunks.jsonl).",
+    )
+    parser.add_argument(
+        "--index-path",
+        type=str,
+        default=DEFAULT_ZVEC_PATH,
+        help="Path for the Zvec index (default: index/zvec_wiki_ml).",
+    )
+    parser.add_argument("--limit", type=int, default=None)
+    args = parser.parse_args()
+    main(chunks_path=args.chunks_file, zvec_path=args.index_path, limit=args.limit)

@@ -182,8 +182,8 @@ def _build_context(
     return "\n\n---\n\n".join(context_parts), sources
 
 
-def generate_answer(question: str, k: int = 15):
-    hits = search(question, k=k)
+def generate_answer(question: str, k: int = 15, chunker: str = "token"):
+    hits = search(question, k=k, chunker=chunker)
 
     diverse_hits = _select_diverse_hits(hits, max_per_title=1, max_total=8)
 
