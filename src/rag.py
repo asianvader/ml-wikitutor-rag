@@ -182,8 +182,17 @@ def _build_context(
     return "\n\n---\n\n".join(context_parts), sources
 
 
-def generate_answer(question: str, k: int = 15, chunker: str = "token"):
-    hits = search(question, k=k, chunker=chunker)
+def generate_answer(
+    question: str,
+    k: int = 15,
+    chunker: str = "token",
+    use_multiquery: bool = False,
+):
+    if use_multiquery:
+        from src.retrieve_multiquery import search_multiquery
+        hits = search_multiquery(question, k=k, chunker=chunker)
+    else:
+        hits = search(question, k=k, chunker=chunker)
 
     diverse_hits = _select_diverse_hits(hits, max_per_title=1, max_total=8)
 

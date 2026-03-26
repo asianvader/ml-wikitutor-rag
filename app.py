@@ -6,10 +6,7 @@ st.set_page_config(page_title="ML WikiTutor", page_icon="📚", layout="wide")
 
 st.markdown("""
 <style>
-/* slightly tighter layout */
 .block-container { padding-top: 2rem; padding-bottom: 2rem; max-width: 900px; }
-
-/* make headers a bit cleaner */
 h1 { margin-bottom: 0.25rem; }
 </style>
 """, unsafe_allow_html=True)
@@ -32,6 +29,16 @@ with st.expander("Settings", expanded=False):
         ),
     )
 
+    use_multiquery = st.checkbox(
+        "Multi-Query retrieval",
+        value=False,
+        help=(
+            "Generates 3 alternative rephrasings of your question and merges "
+            "the results. Improves recall for vague or informally phrased questions "
+            "at the cost of a small extra LLM call."
+        ),
+    )
+
     # Warn if the semantic index doesn't exist yet
     if chunker == "semantic" and not os.path.exists("index/zvec_wiki_ml_semantic"):
         st.warning(
@@ -39,7 +46,6 @@ with st.expander("Settings", expanded=False):
             "then restart the app."
         )
 
-# Put input + submit in a form so Enter works
 with st.form("ask_form", clear_on_submit=False):
     question = st.text_input(
         "Ask a question:",
@@ -51,18 +57,18 @@ if submitted:
     if not question.strip():
         st.warning("Enter a question first.")
     else:
-        with st.spinner("Retrieving and generating answer..."):
-            answer, sources, hits, confidence = generate_answer(question, k=k, chunker=chunker)
+        strategy_label = f"{'Multi-Query + ' if use_multiquery else ''}{chunker.capitalize()}"
+        with st.spinner(f"Retrieving ({strategy_label}) and generating answer…"):
+            answer, sources, hits, confidence = generate_answer(
+                question, k=k, chunker=chunker, use_multiquery=use_multiquery
+            )
 
         st.subheader("Answer")
         st.write(answer)
 
-        # Detect refusal
         refused = "don't have that information in my sources" in answer.lower()
 
-        # Only show confidence + sources if not refusal
         if not refused:
-
             st.markdown(
                 f"**Confidence:** {confidence['label']} "
                 f"({confidence['value']*100:.0f}%)"
@@ -76,16 +82,10 @@ if submitted:
                         f"Score: `{s['score']}`  \n"
                         f"{s['url']}"
                     )
-
                     with st.expander(f"Preview [{s['n']}]"):
                         st.write(s["preview"])
 
-            # Debug panel
             with st.expander("🔎 Debug"):
                 st.json(confidence)
                 for i, h in enumerate(hits, start=1):
-                    st.write(
-                        i,
-                        h.fields.get("title"),
-                        getattr(h, "score", None)
-                    )
+                    st.write(i, h.fields.get("title"), getattr(h, "score", None))
