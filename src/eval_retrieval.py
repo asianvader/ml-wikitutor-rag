@@ -269,7 +269,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--chunkers",
         nargs="+",
-        choices=["token", "semantic", "multiquery_token", "multiquery_semantic"],
+        choices=["token", "semantic", "parent_child", "multiquery_token", "multiquery_semantic"],
         default=["token", "semantic"],
         help="Retrieval modes to evaluate (default: token semantic).",
     )

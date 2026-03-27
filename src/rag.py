@@ -142,7 +142,7 @@ def _build_context(
     for h in hits_sorted:
         title = h.fields.get("title") or "Unknown"
         chunk_id = h.fields.get("chunk_id")
-        text = h.fields.get("text") or ""
+        text = h.fields.get("parent_text") or h.fields.get("text") or ""
         url = h.fields.get("source_url")
         score = getattr(h, "score", None)
 

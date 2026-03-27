@@ -102,6 +102,10 @@ def main(limit: int | None = None, chunker: str = "token", titles_file: str | No
         emb = OpenAIEmbeddings(model="text-embedding-3-small")
         out_path = DATA_PROCESSED / "chunks_semantic.jsonl"
         print(f"Using semantic chunker → {out_path}")
+    elif chunker == "parent_child":
+        from src.chunk_parent_child import chunk_text_parent_child
+        out_path = DATA_PROCESSED / "chunks_parent_child.jsonl"
+        print(f"Using parent-child chunker → {out_path}")
     else:
         out_path = DATA_PROCESSED / "chunks.jsonl"
         print(f"Using token chunker → {out_path}")
@@ -120,6 +124,8 @@ def main(limit: int | None = None, chunker: str = "token", titles_file: str | No
 
             if chunker == "semantic":
                 chunks = chunk_text_semantic(text, embeddings=emb)
+            elif chunker == "parent_child":
+                chunks = chunk_text_parent_child(text)
             else:
                 chunks = chunk_text(text, chunk_size=500, overlap=80)
 
@@ -134,6 +140,8 @@ def main(limit: int | None = None, chunker: str = "token", titles_file: str | No
                     "text": c.text,
                     "chunker": chunker,
                 }
+                if chunker == "parent_child":
+                    record["parent_text"] = c.parent_text
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
             total_chunks += len(chunks)
@@ -154,7 +162,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest Wikipedia articles into chunks.")
     parser.add_argument(
         "--chunker",
-        choices=["token", "semantic"],
+        choices=["token", "semantic", "parent_child"],
         default="token",
         help="Chunking strategy: 'token' (default) or 'semantic'.",
     )

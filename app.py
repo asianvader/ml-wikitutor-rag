@@ -19,13 +19,19 @@ with st.expander("Settings", expanded=False):
 
     chunker = st.radio(
         "Chunking strategy",
-        options=["token", "semantic"],
-        format_func=lambda x: "Token-based (default)" if x == "token" else "Semantic",
+        options=["token", "semantic", "parent_child"],
+        format_func=lambda x: {
+            "token": "Token-based (default)",
+            "semantic": "Semantic",
+            "parent_child": "Parent-Child",
+        }[x],
         horizontal=True,
         help=(
             "Token-based: fixed-size chunks with overlap. "
             "Semantic: splits at points where meaning shifts. "
-            "Requires the semantic index to be built first."
+            "Parent-Child: small child chunks indexed for precision; "
+            "parent chunk (~500 tok) returned to the LLM for richer context. "
+            "Semantic and Parent-Child require their indexes to be built first."
         ),
     )
 
@@ -39,10 +45,15 @@ with st.expander("Settings", expanded=False):
         ),
     )
 
-    # Warn if the semantic index doesn't exist yet
+    # Warn if the selected index doesn't exist yet
     if chunker == "semantic" and not os.path.exists("index/zvec_wiki_ml_semantic"):
         st.warning(
             "⚠️ Semantic index not found. Run `bash scripts/rebuild_index_semantic.sh` first, "
+            "then restart the app."
+        )
+    if chunker == "parent_child" and not os.path.exists("index/zvec_wiki_ml_parent_child"):
+        st.warning(
+            "⚠️ Parent-child index not found. Run `bash scripts/rebuild_index_parent_child.sh` first, "
             "then restart the app."
         )
 

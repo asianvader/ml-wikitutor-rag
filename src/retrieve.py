@@ -10,8 +10,9 @@ VECTOR_FIELD = "text_embedding"
 EMBEDDING_MODEL = "text-embedding-3-small"
 
 ZVEC_PATHS = {
-    "token":    "index/zvec_wiki_ml",
-    "semantic": "index/zvec_wiki_ml_semantic",
+    "token":        "index/zvec_wiki_ml",
+    "semantic":     "index/zvec_wiki_ml_semantic",
+    "parent_child": "index/zvec_wiki_ml_parent_child",
 }
 
 # Keep these as module-level singletons so Streamlit doesn't recreate them on every rerun

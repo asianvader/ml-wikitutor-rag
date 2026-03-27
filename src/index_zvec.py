@@ -25,6 +25,7 @@ def create_or_open_collection(path: str):
             zvec.FieldSchema(name="section", data_type=zvec.DataType.STRING, nullable=True),
             zvec.FieldSchema(name="source_url", data_type=zvec.DataType.STRING, nullable=True),
             zvec.FieldSchema(name="chunk_id", data_type=zvec.DataType.STRING, nullable=True),
+            zvec.FieldSchema(name="parent_text", data_type=zvec.DataType.STRING, nullable=True),
         ],
         vectors=[
             zvec.VectorSchema(
@@ -105,6 +106,7 @@ def main(
                         "section": r.get("section"),
                         "source_url": r.get("source_url"),
                         "chunk_id": str(r.get("chunk_index")),
+                        "parent_text": r.get("parent_text"),
                     },
                 )
             )
