@@ -60,7 +60,7 @@ def main():
             qid = q.get("id")
             question = q["question"]
 
-            answer, sources, hits, confidence = generate_answer(question, k=15)
+            answer, sources, hits, confidence, _ctx = generate_answer(question, k=15)
 
             ok, notes = check_expectations(q, answer, sources)
 

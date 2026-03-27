@@ -70,7 +70,7 @@ if submitted:
     else:
         strategy_label = f"{'Multi-Query + ' if use_multiquery else ''}{chunker.capitalize()}"
         with st.spinner(f"Retrieving ({strategy_label}) and generating answer…"):
-            answer, sources, hits, confidence = generate_answer(
+            answer, sources, hits, confidence, _ctx = generate_answer(
                 question, k=k, chunker=chunker, use_multiquery=use_multiquery
             )
 

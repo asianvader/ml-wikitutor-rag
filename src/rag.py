@@ -31,8 +31,12 @@ Include:
 - a short example or intuition (when relevant)
 - common pitfalls or trade-offs (when relevant)
 
-Include citations inline like [1], [2] matching the context blocks.
-Do not cite sources you did not use.
+STRICT GROUNDING RULES — you MUST follow these:
+- Every factual claim you make MUST be directly supported by the context below.
+- Do NOT add facts, numbers, formulas, or examples from your training knowledge that are absent from the context.
+- If a detail is not in the context, omit it or say "my sources don't cover this detail."
+- Include citations inline like [1], [2] matching the context blocks.
+- Do not cite sources you did not use.
 
 CONTEXT:
 {context}
@@ -216,6 +220,6 @@ def generate_answer(
         or "i can only answer questions about machine learning" in answer.lower()
     )
     if refused:
-        return answer, [], hits, confidence
+        return answer, [], hits, confidence, context
 
-    return answer, sources, hits, confidence
+    return answer, sources, hits, confidence, context
