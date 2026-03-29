@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -29,7 +29,6 @@ from src.rag import generate_answer
 QUESTIONS_PATH = Path("eval/questions.jsonl")
 OUT_PATH = Path("eval/generation_results.jsonl")
 
-_judge_llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0)
 _parser = StrOutputParser()
 
 _JUDGE_PROMPT = ChatPromptTemplate.from_template(
@@ -57,7 +56,9 @@ Return exactly this JSON (no markdown fences, no extra keys):
 {{"faithfulness": <int 1-5>, "answer_relevance": <int 1-5>, "faithfulness_reason": "<one sentence>", "answer_relevance_reason": "<one sentence>"}}"""
 )
 
-_judge_chain = _judge_llm | _parser
+def _make_judge_chain(model: str = "gpt-4.1"):
+    llm = ChatOpenAI(model=model, temperature=0)
+    return _JUDGE_PROMPT | llm | _parser
 
 
 def _parse_scores(raw: str) -> dict:
@@ -91,7 +92,7 @@ def _build_context_text(sources: list[dict]) -> str:
     return "\n\n".join(parts) if parts else "(no context retrieved)"
 
 
-def evaluate(chunker: str = "token", k: int = 15) -> None:
+def evaluate(chunker: str = "token", k: int = 15, judge_model: str = "gpt-4.1") -> None:
     questions = []
     with QUESTIONS_PATH.open("r", encoding="utf-8") as f:
         for line in f:
@@ -105,7 +106,8 @@ def evaluate(chunker: str = "token", k: int = 15) -> None:
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     results = []
 
-    print(f"\nEvaluating {len(ml_questions)} questions  [chunker={chunker}, k={k}]\n")
+    judge_chain = _make_judge_chain(judge_model)
+    print(f"\nEvaluating {len(ml_questions)} questions  [chunker={chunker}, k={k}, judge={judge_model}]\n")
     print(f"{'ID':<6} {'Faithful':>8} {'Relevant':>8}  Question")
     print("-" * 70)
 
@@ -120,13 +122,11 @@ def evaluate(chunker: str = "token", k: int = 15) -> None:
             )
 
             # 3. Judge
-            raw = _judge_chain.invoke(
-                _JUDGE_PROMPT.format_messages(
-                    question=question,
-                    context=context_text,
-                    answer=answer,
-                )
-            )
+            raw = judge_chain.invoke({
+                "question": question,
+                "context": context_text,
+                "answer": answer,
+            })
             scores = _parse_scores(raw)
 
             record = {
@@ -141,7 +141,7 @@ def evaluate(chunker: str = "token", k: int = 15) -> None:
                 "answer_relevance": scores["answer_relevance"],
                 "faithfulness_reason": scores["faithfulness_reason"],
                 "answer_relevance_reason": scores["answer_relevance_reason"],
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             results.append(record)
             out.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -180,8 +180,11 @@ def main():
     parser.add_argument(
         "--k", type=int, default=15, help="Number of chunks to retrieve (default: 15)"
     )
+    parser.add_argument(
+        "--judge-model", default="gpt-4.1", help="OpenAI model to use as judge (default: gpt-4.1)"
+    )
     args = parser.parse_args()
-    evaluate(chunker=args.chunker, k=args.k)
+    evaluate(chunker=args.chunker, k=args.k, judge_model=args.judge_model)
 
 
 if __name__ == "__main__":

@@ -91,9 +91,10 @@ if submitted:
             if sources:
                 st.subheader("Sources")
                 for s in sources:
+                    relevance = f"{(1 - s['score']) * 100:.0f}%" if s.get("score") is not None else "n/a"
                     st.markdown(
                         f"**[{s['n']}] {s['title']}**  \n"
-                        f"Score: `{s['score']}`  \n"
+                        f"Relevance: `{relevance}`  \n"
                         f"{s['url']}"
                     )
                     with st.expander(f"Preview [{s['n']}]"):
