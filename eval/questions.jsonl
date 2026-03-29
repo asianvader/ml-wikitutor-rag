@@ -34,3 +34,11 @@
 {"id":"q34","question":"Where is Paris located?","relevant_titles":[],"expect_refusal":true}
 {"id":"q35","question":"Who was Napoleon Bonaparte?","relevant_titles":[],"expect_refusal":true}
 {"id":"q36","question":"What happened during the French Revolution?","relevant_titles":[],"expect_refusal":true}
+{"id":"q37","question":"What is the lottery ticket hypothesis in neural networks?","relevant_titles":["Lottery ticket hypothesis","Neural network pruning","Deep learning"],"expect_source_contains":[]}
+{"id":"q38","question":"How does Constitutional AI work?","relevant_titles":[],"expect_source_contains":[]}
+{"id":"q39","question":"What is mechanistic interpretability in AI?","relevant_titles":["Explainable artificial intelligence","Interpretability","Neural network (machine learning)"],"expect_source_contains":[]}
+{"id":"q40","question":"How is machine learning used in drug discovery?","relevant_titles":["Machine learning in bioinformatics","Drug discovery","Artificial intelligence in healthcare"],"expect_source_contains":[]}
+{"id":"q41","question":"What is a mixture of experts architecture?","relevant_titles":["Mixture of experts","Large language model","Transformer (deep learning)"],"expect_source_contains":[]}
+{"id":"q42","question":"What did Geoffrey Hinton contribute to deep learning?","relevant_titles":["Geoffrey Hinton","Deep learning","Backpropagation","Boltzmann machine"],"expect_source_contains":[]}
+{"id":"q43","question":"How does sparse attention work in transformers?","relevant_titles":["Attention (machine learning)","Transformer (deep learning)","Sparse matrix"],"expect_source_contains":[]}
+{"id":"q44","question":"What is quantum machine learning?","relevant_titles":["Quantum machine learning","Quantum computing","Machine learning"],"expect_source_contains":[]}
