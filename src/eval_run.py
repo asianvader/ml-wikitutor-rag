@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.rag import generate_answer
 
@@ -72,7 +72,7 @@ def main():
                 "sources": sources,
                 "ok": ok,
                 "notes": notes,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
             out.write(json.dumps(record, ensure_ascii=False) + "\n")

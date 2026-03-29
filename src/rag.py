@@ -75,39 +75,51 @@ def _select_diverse_hits(hits, *, max_per_title: int = 2, max_total: int = 12):
 
 def _confidence_from_sources(sources):
     """
-    Simple heuristic confidence from Zvec cosine distance scores.
+    Heuristic confidence from Zvec cosine distance scores.
     Lower score = more similar.
 
+    Anchors on mean-of-top-3 (more robust than single best hit).
+    Boosts when multiple distinct titles score well (multi-source agreement).
+    Penalises wide spread between best and worst.
+
     Returns:
-      dict with label + numeric score in [0, 1] + explanation fields
+      dict with label + numeric value in [0, 1] + debug fields
     """
-    scores = [s["score"] for s in sources if s.get("score") is not None]
-    if not scores:
+    valid = [s for s in sources if s.get("score") is not None]
+    if not valid:
         return {"label": "Low", "value": 0.0, "best": None, "worst": None, "reason": "No retrieval scores"}
 
-    best = min(scores)
-    worst = max(scores)
+    scores_sorted = sorted(s["score"] for s in valid)
+    best = scores_sorted[0]
+    worst = scores_sorted[-1]
+    spread = worst - best
 
-    # Map best score (distance) to a 0.1 confidence value.
-    # These thresholds are empirical; tweak later.
-    # Typical “good” distances often land ~0.25–0.45 in your current setup.
-    if best <= 0.38:
+    # Anchor on mean of top-3 — less sensitive to a single lucky hit
+    top3 = scores_sorted[:3]
+    anchor = sum(top3) / len(top3)
+
+    if anchor <= 0.38:
         label = "High"
         value = 0.85
-    elif best <= 0.45:
+    elif anchor <= 0.45:
         label = "Medium"
         value = 0.65
     else:
         label = "Low"
         value = 0.45
-    # Slightly adjust by spread: if worst is much worse than best, penalize
-    spread = worst - best
+
+    # Spread penalty: noisy hit set lowers confidence
     if spread > 0.20:
         value -= 0.10
     if spread > 0.30:
         value -= 0.10
 
-    # Clamp
+    # Multi-source agreement boost: ≥3 good hits from ≥2 distinct titles
+    good_hits = [s for s in valid if s["score"] < 0.40]
+    unique_good_titles = len({s.get("title", "") for s in good_hits})
+    if len(good_hits) >= 3 and unique_good_titles >= 2:
+        value += 0.05
+
     value = max(0.0, min(1.0, value))
 
     return {
@@ -115,7 +127,10 @@ def _confidence_from_sources(sources):
         "value": value,
         "best": best,
         "worst": worst,
-        "spread": spread,
+        "anchor": round(anchor, 4),
+        "spread": round(spread, 4),
+        "good_hits": len(good_hits),
+        "unique_good_titles": unique_good_titles,
     }
 
 def _build_context(
@@ -208,8 +223,12 @@ def generate_answer(
         max_chunks_per_title=1,
     )
 
-    # compute confidence BEFORE early return
-    confidence = _confidence_from_sources(sources)
+    # Compute confidence from ALL diverse hits (not just those that fit the token budget)
+    all_hit_scores = [
+        {"score": getattr(h, "score", None), "title": h.fields.get("title")}
+        for h in diverse_hits
+    ]
+    confidence = _confidence_from_sources(all_hit_scores)
 
     chain = _prompt | _llm | _parser
     answer = chain.invoke({"question": question, "context": context})
