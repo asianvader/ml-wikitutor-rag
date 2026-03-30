@@ -170,6 +170,15 @@ uv run streamlit run app.py
 * Zvec is local; index artifacts are stored under index/ and should not be committed.
 
 ---
+
+## Branches
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Current development branch (Qdrant Cloud vector store) |
+| `legacy/zvec` | Preserves the original Zvec (local, file-based) implementation before the migration to Qdrant Cloud |
+
+---
 ## References
 
 This project builds upon the following tools and technologies:

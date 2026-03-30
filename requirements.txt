@@ -1,0 +1,9 @@
+# Pinned versions for Streamlit Community Cloud deployment.
+# Keep in sync with pyproject.toml.
+langchain-core==1.2.15
+langchain-openai==1.1.10
+python-dotenv==1.2.1
+qdrant-client>=1.7.0
+requests==2.32.5
+streamlit==1.54.0
+tiktoken==0.12.0

@@ -12,7 +12,6 @@ uv run python -m src.generate_titles
 echo "=== Ingesting articles (token chunker) ==="
 uv run python -m src.ingest_wiki_api
 
-# 2) Rebuild Zvec from scratch (schema is fixed, easiest is clean rebuild)
-echo "=== Rebuilding token index ==="
-rm -rf index/zvec_wiki_ml
-uv run python -m src.index_zvec
+# 2) Upsert into the Qdrant Cloud token collection (wiki_ml_token)
+echo "=== Indexing into Qdrant (token chunker) ==="
+uv run python -m src.index_qdrant --chunker token

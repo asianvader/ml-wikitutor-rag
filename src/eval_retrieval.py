@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -247,7 +247,7 @@ def main(chunkers: list[str], k: int) -> None:
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with OUT_PATH.open("w", encoding="utf-8") as f:
         for rec in records:
-            rec["timestamp"] = datetime.utcnow().isoformat() + "Z"
+            rec["timestamp"] = datetime.now(timezone.utc).isoformat()
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
         # Write aggregate summary as final line
@@ -255,7 +255,7 @@ def main(chunkers: list[str], k: int) -> None:
             "id": "_summary",
             "k": k,
             "chunkers": chunkers,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         for c in chunkers:
             summary[c] = aggregate(all_results[c])
