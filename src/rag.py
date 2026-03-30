@@ -242,3 +242,45 @@ def generate_answer(
         return answer, [], hits, confidence, context
 
     return answer, sources, hits, confidence, context
+
+
+def stream_answer(
+    question: str,
+    k: int = 15,
+    chunker: str = "token",
+    use_multiquery: bool = False,
+):
+    """
+    Like generate_answer() but returns a streaming token iterator for the LLM response.
+
+    Returns:
+      token_stream: generator yielding str chunks (pass to st.write_stream)
+      sources: list of source dicts (available immediately, before streaming)
+      hits: raw retrieval hits
+      confidence: confidence dict
+      context: context string
+    """
+    if use_multiquery:
+        from src.retrieve_multiquery import search_multiquery
+        hits = search_multiquery(question, k=k, chunker=chunker)
+    else:
+        hits = search(question, k=k, chunker=chunker)
+
+    diverse_hits = _select_diverse_hits(hits, max_per_title=1, max_total=8)
+
+    context, sources = _build_context(
+        diverse_hits,
+        max_context_tokens=3000,
+        max_chunks_per_title=1,
+    )
+
+    all_hit_scores = [
+        {"score": getattr(h, "score", None), "title": h.fields.get("title")}
+        for h in diverse_hits
+    ]
+    confidence = _confidence_from_sources(all_hit_scores)
+
+    chain = _prompt | _llm | _parser
+    token_stream = chain.stream({"question": question, "context": context})
+
+    return token_stream, sources, hits, confidence, context

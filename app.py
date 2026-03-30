@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from src.rag import generate_answer
+from src.rag import generate_answer, stream_answer
 
 st.set_page_config(page_title="ML WikiTutor", page_icon="📚", layout="wide")
 
@@ -69,13 +69,13 @@ if submitted:
         st.warning("Enter a question first.")
     else:
         strategy_label = f"{'Multi-Query + ' if use_multiquery else ''}{chunker.capitalize()}"
-        with st.spinner(f"Retrieving ({strategy_label}) and generating answer…"):
-            answer, sources, hits, confidence, _ctx = generate_answer(
+        with st.spinner(f"Retrieving ({strategy_label})…"):
+            token_stream, sources, hits, confidence, _ctx = stream_answer(
                 question, k=k, chunker=chunker, use_multiquery=use_multiquery
             )
 
         st.subheader("Answer")
-        st.write(answer)
+        answer = st.write_stream(token_stream)
 
         refused = (
             "don't have that information in my sources" in answer.lower()
