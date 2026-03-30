@@ -4,10 +4,28 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from src.retrieve import search
+from src.config import (
+    LLM_MODEL,
+    DEFAULT_K,
+    MAX_PER_TITLE,
+    MAX_TOTAL_HITS,
+    MAX_CONTEXT_TOKENS,
+    CONF_HIGH_THRESHOLD,
+    CONF_MEDIUM_THRESHOLD,
+    CONF_HIGH_VALUE,
+    CONF_MEDIUM_VALUE,
+    CONF_LOW_VALUE,
+    CONF_SPREAD_THRESHOLD_1,
+    CONF_SPREAD_THRESHOLD_2,
+    CONF_SPREAD_PENALTY,
+    CONF_GOOD_HIT_THRESHOLD,
+    CONF_MULTI_SOURCE_BOOST,
+    REFUSAL_PHRASES,
+    PREVIEW_CHARS,
+)
 from dotenv import load_dotenv
 load_dotenv()
 
-LLM_MODEL = "gpt-4.1-mini"
 _llm = ChatOpenAI(model=LLM_MODEL, temperature=0.2)
 _parser = StrOutputParser()
 
@@ -46,20 +64,22 @@ QUESTION:
 """
 )
 
+
 def _token_len(text: str) -> int:
     return len(_enc.encode(text or ""))
 
-def _select_diverse_hits(hits, *, max_per_title: int = 2, max_total: int = 12):
+
+def _select_diverse_hits(hits, *, max_per_title: int = MAX_PER_TITLE, max_total: int = MAX_TOTAL_HITS):
     """
     Select a diverse subset of hits:
-    - sort by score (lower is better)
+    - sort by score (lower is better for Zvec cosine distance)
     - keep at most `max_per_title` per title
     - return at most `max_total` hits
     """
     hits_sorted = sorted(hits, key=lambda h: getattr(h, "score", 1e9))
 
     out = []
-    per_title = {}
+    per_title: dict[str, int] = {}
 
     for h in hits_sorted:
         title = h.fields.get("title") or "Unknown"
@@ -73,21 +93,24 @@ def _select_diverse_hits(hits, *, max_per_title: int = 2, max_total: int = 12):
 
     return out
 
-def _confidence_from_sources(sources):
+
+def _confidence_from_sources(sources: list[dict]) -> dict:
     """
-    Heuristic confidence from Zvec cosine distance scores.
-    Lower score = more similar.
+    Heuristic confidence derived from Zvec cosine distance scores in `sources`.
 
-    Anchors on mean-of-top-3 (more robust than single best hit).
+    Expects each item to have 'score' (float | None) and optionally 'title'.
+    Lower score = more similar (good).
+
+    Anchors on mean-of-top-3 (more robust than a single best hit).
+    Penalises wide spread between best and worst hit.
     Boosts when multiple distinct titles score well (multi-source agreement).
-    Penalises wide spread between best and worst.
 
-    Returns:
-      dict with label + numeric value in [0, 1] + debug fields
+    Returns a dict with label, numeric value in [0, 1], and debug fields.
     """
     valid = [s for s in sources if s.get("score") is not None]
     if not valid:
-        return {"label": "Low", "value": 0.0, "best": None, "worst": None, "reason": "No retrieval scores"}
+        return {"label": "Low", "value": 0.0, "best": None, "worst": None,
+                "reason": "No retrieval scores"}
 
     scores_sorted = sorted(s["score"] for s in valid)
     best = scores_sorted[0]
@@ -98,27 +121,24 @@ def _confidence_from_sources(sources):
     top3 = scores_sorted[:3]
     anchor = sum(top3) / len(top3)
 
-    if anchor <= 0.38:
-        label = "High"
-        value = 0.85
-    elif anchor <= 0.45:
-        label = "Medium"
-        value = 0.65
+    if anchor <= CONF_HIGH_THRESHOLD:
+        label, value = "High", CONF_HIGH_VALUE
+    elif anchor <= CONF_MEDIUM_THRESHOLD:
+        label, value = "Medium", CONF_MEDIUM_VALUE
     else:
-        label = "Low"
-        value = 0.45
+        label, value = "Low", CONF_LOW_VALUE
 
     # Spread penalty: noisy hit set lowers confidence
-    if spread > 0.20:
-        value -= 0.10
-    if spread > 0.30:
-        value -= 0.10
+    if spread > CONF_SPREAD_THRESHOLD_1:
+        value -= CONF_SPREAD_PENALTY
+    if spread > CONF_SPREAD_THRESHOLD_2:
+        value -= CONF_SPREAD_PENALTY
 
     # Multi-source agreement boost: ≥3 good hits from ≥2 distinct titles
-    good_hits = [s for s in valid if s["score"] < 0.40]
+    good_hits = [s for s in valid if s["score"] < CONF_GOOD_HIT_THRESHOLD]
     unique_good_titles = len({s.get("title", "") for s in good_hits})
     if len(good_hits) >= 3 and unique_good_titles >= 2:
-        value += 0.05
+        value += CONF_MULTI_SOURCE_BOOST
 
     value = max(0.0, min(1.0, value))
 
@@ -133,12 +153,13 @@ def _confidence_from_sources(sources):
         "unique_good_titles": unique_good_titles,
     }
 
+
 def _build_context(
     hits,
     *,
-    max_context_tokens: int = 3000,
-    max_chunks_per_title: int = 2,
-):
+    max_context_tokens: int = MAX_CONTEXT_TOKENS,
+    max_chunks_per_title: int = MAX_PER_TITLE,
+) -> tuple[str, list[dict]]:
     """
     Build a bounded, deduplicated context string with numbered citations.
 
@@ -149,12 +170,12 @@ def _build_context(
     # Zvec cosine distance: lower score = more similar
     hits_sorted = sorted(hits, key=lambda h: getattr(h, "score", 1e9))
 
-    sources = []
-    context_parts = []
+    sources: list[dict] = []
+    context_parts: list[str] = []
     used_tokens = 0
 
-    per_title_count = {}
-    seen = set()  # (title, chunk_id) guard
+    per_title_count: dict[str, int] = {}
+    seen: set[tuple] = set()  # (title, chunk_id) dedup guard
 
     citation_num = 1
 
@@ -178,7 +199,7 @@ def _build_context(
         block = f"[{citation_num}] Title: {title}\nURL: {url}\n\n{text}".strip()
         block_tokens = _token_len(block)
 
-        # Stop when budget exceeded (leave room for prompt + question)
+        # Skip chunks that would exceed the token budget
         if used_tokens + block_tokens > max_context_tokens:
             continue
 
@@ -191,7 +212,7 @@ def _build_context(
             "url": url,
             "score": score,
             "chunk_id": chunk_id,
-            "preview": text[:180].replace("\n", " "),
+            "preview": (text or "")[:PREVIEW_CHARS].replace("\n", " "),
         })
 
         per_title_count[title] += 1
@@ -203,42 +224,59 @@ def _build_context(
     return "\n\n---\n\n".join(context_parts), sources
 
 
-def generate_answer(
+def _is_refused(answer: str) -> bool:
+    """Return True if the answer is a refusal (off-topic or missing sources)."""
+    lower = answer.lower()
+    return any(phrase in lower for phrase in REFUSAL_PHRASES)
+
+
+def _retrieve_and_build(
     question: str,
-    k: int = 15,
-    chunker: str = "token",
-    use_multiquery: bool = False,
-):
+    k: int,
+    chunker: str,
+    use_multiquery: bool,
+) -> tuple:
+    """
+    Shared retrieval + context-building logic used by both generate_answer()
+    and stream_answer().
+
+    Returns:
+      hits: raw retrieval hits (for debug display)
+      context: context string passed to the LLM
+      sources: citation metadata for the chunks that made it into context
+      confidence: confidence dict computed from sources (what the LLM actually sees)
+    """
     if use_multiquery:
         from src.retrieve_multiquery import search_multiquery
         hits = search_multiquery(question, k=k, chunker=chunker)
     else:
         hits = search(question, k=k, chunker=chunker)
 
-    diverse_hits = _select_diverse_hits(hits, max_per_title=1, max_total=8)
+    diverse_hits = _select_diverse_hits(hits)
+    context, sources = _build_context(diverse_hits)
 
-    context, sources = _build_context(
-        diverse_hits,
-        max_context_tokens=3000,
-        max_chunks_per_title=1,
+    # Confidence is computed from `sources` — the exact chunks sent to the LLM,
+    # not the broader diverse_hits pool, so the signal reflects what the model saw.
+    confidence = _confidence_from_sources(sources)
+
+    return hits, context, sources, confidence
+
+
+def generate_answer(
+    question: str,
+    k: int = DEFAULT_K,
+    chunker: str = "token",
+    use_multiquery: bool = False,
+):
+    """Retrieve context and return a complete LLM answer (blocking)."""
+    hits, context, sources, confidence = _retrieve_and_build(
+        question, k, chunker, use_multiquery
     )
-
-    # Compute confidence from ALL diverse hits (not just those that fit the token budget)
-    all_hit_scores = [
-        {"score": getattr(h, "score", None), "title": h.fields.get("title")}
-        for h in diverse_hits
-    ]
-    confidence = _confidence_from_sources(all_hit_scores)
 
     chain = _prompt | _llm | _parser
     answer = chain.invoke({"question": question, "context": context})
 
-    # hide sources when refusing
-    refused = (
-        "don't have that information in my sources" in answer.lower()
-        or "i can only answer questions about machine learning" in answer.lower()
-    )
-    if refused:
+    if _is_refused(answer):
         return answer, [], hits, confidence, context
 
     return answer, sources, hits, confidence, context
@@ -246,39 +284,26 @@ def generate_answer(
 
 def stream_answer(
     question: str,
-    k: int = 15,
+    k: int = DEFAULT_K,
     chunker: str = "token",
     use_multiquery: bool = False,
 ):
     """
-    Like generate_answer() but returns a streaming token iterator for the LLM response.
+    Retrieve context and return a streaming token iterator for the LLM response.
+
+    Retrieval and context-building happen upfront (blocking); only the LLM
+    generation streams token-by-token.
 
     Returns:
       token_stream: generator yielding str chunks (pass to st.write_stream)
-      sources: list of source dicts (available immediately, before streaming)
-      hits: raw retrieval hits
-      confidence: confidence dict
-      context: context string
+      sources: citation metadata (available before streaming starts)
+      hits: raw retrieval hits (for debug display)
+      confidence: confidence dict computed from sources
+      context: context string sent to the LLM
     """
-    if use_multiquery:
-        from src.retrieve_multiquery import search_multiquery
-        hits = search_multiquery(question, k=k, chunker=chunker)
-    else:
-        hits = search(question, k=k, chunker=chunker)
-
-    diverse_hits = _select_diverse_hits(hits, max_per_title=1, max_total=8)
-
-    context, sources = _build_context(
-        diverse_hits,
-        max_context_tokens=3000,
-        max_chunks_per_title=1,
+    hits, context, sources, confidence = _retrieve_and_build(
+        question, k, chunker, use_multiquery
     )
-
-    all_hit_scores = [
-        {"score": getattr(h, "score", None), "title": h.fields.get("title")}
-        for h in diverse_hits
-    ]
-    confidence = _confidence_from_sources(all_hit_scores)
 
     chain = _prompt | _llm | _parser
     token_stream = chain.stream({"question": question, "context": context})
