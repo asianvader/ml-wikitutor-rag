@@ -1,6 +1,7 @@
 import os
 import streamlit as st
-from src.rag import generate_answer
+from src.rag import stream_answer, _is_refused
+from src.config import UI_DEFAULT_K, REFUSAL_PHRASES  # noqa: F401 (REFUSAL_PHRASES via _is_refused)
 
 st.set_page_config(page_title="ML WikiTutor", page_icon="📚", layout="wide")
 
@@ -15,7 +16,7 @@ st.title("📚 ML WikiTutor")
 st.write("Ask questions about Machine Learning, Data Science, and AI using a curated Wikipedia knowledge base.")
 
 with st.expander("Settings", expanded=False):
-    k = st.number_input("Top-K", min_value=1, max_value=30, value=12, step=1)
+    k = st.number_input("Top-K", min_value=1, max_value=30, value=UI_DEFAULT_K, step=1)
 
     chunker = st.radio(
         "Chunking strategy",
@@ -69,18 +70,19 @@ if submitted:
         st.warning("Enter a question first.")
     else:
         strategy_label = f"{'Multi-Query + ' if use_multiquery else ''}{chunker.capitalize()}"
-        with st.spinner(f"Retrieving ({strategy_label}) and generating answer…"):
-            answer, sources, hits, confidence, _ctx = generate_answer(
-                question, k=k, chunker=chunker, use_multiquery=use_multiquery
-            )
+        try:
+            with st.spinner(f"Retrieving ({strategy_label})…"):
+                token_stream, sources, hits, confidence, _ctx = stream_answer(
+                    question, k=k, chunker=chunker, use_multiquery=use_multiquery
+                )
 
-        st.subheader("Answer")
-        st.write(answer)
+            st.subheader("Answer")
+            answer = st.write_stream(token_stream)
+        except Exception as exc:
+            st.error(f"Something went wrong: {exc}")
+            st.stop()
 
-        refused = (
-            "don't have that information in my sources" in answer.lower()
-            or "i can only answer questions about machine learning" in answer.lower()
-        )
+        refused = _is_refused(answer)
 
         if not refused:
             st.markdown(
@@ -91,16 +93,17 @@ if submitted:
             if sources:
                 st.subheader("Sources")
                 for s in sources:
-                    relevance = f"{(1 - s['score']) * 100:.0f}%" if s.get("score") is not None else "n/a"
+                    # Zvec cosine distance: lower = more similar → similarity = 1 - distance
+                    similarity = f"{(1 - s['score']) * 100:.0f}%" if s.get("score") is not None else "n/a"
                     st.markdown(
                         f"**[{s['n']}] {s['title']}**  \n"
-                        f"Relevance: `{relevance}`  \n"
+                        f"Similarity: `{similarity}`  \n"
                         f"{s['url']}"
                     )
                     with st.expander(f"Preview [{s['n']}]"):
                         st.write(s["preview"])
 
-            with st.expander("🔎 Debug"):
-                st.json(confidence)
-                for i, h in enumerate(hits, start=1):
-                    st.write(i, h.fields.get("title"), getattr(h, "score", None))
+        with st.expander("🔎 Debug"):
+            st.json(confidence)
+            for i, h in enumerate(hits, start=1):
+                st.write(i, h.fields.get("title"), getattr(h, "score", None))
