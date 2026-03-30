@@ -1,7 +1,7 @@
 import os
 import streamlit as st
-from src.rag import stream_answer, _is_refused
-from src.config import UI_DEFAULT_K, REFUSAL_PHRASES  # noqa: F401 (REFUSAL_PHRASES via _is_refused)
+from src.rag import retrieve_context, answer_stream, _is_refused
+from src.config import UI_DEFAULT_K
 
 st.set_page_config(page_title="ML WikiTutor", page_icon="📚", layout="wide")
 
@@ -69,15 +69,34 @@ if submitted:
     if not question.strip():
         st.warning("Enter a question first.")
     else:
-        strategy_label = f"{'Multi-Query + ' if use_multiquery else ''}{chunker.capitalize()}"
         try:
-            with st.spinner(f"Retrieving ({strategy_label})…"):
-                token_stream, sources, hits, confidence, _ctx = stream_answer(
+            # ── Step 1: retrieval with live status updates ─────────────────
+            with st.status("Retrieving from knowledge base...", expanded=True) as status:
+                if use_multiquery:
+                    st.write("🔀 Generating query variants with LLM...")
+                st.write("🔍 Searching vector index...")
+                hits, context, sources, confidence = retrieve_context(
                     question, k=k, chunker=chunker, use_multiquery=use_multiquery
                 )
+                n_chunks = len(sources)
+                n_articles = len({s["title"] for s in sources})
+                st.write(
+                    f"✅ Found {n_chunks} chunk{'s' if n_chunks != 1 else ''} "
+                    f"across {n_articles} article{'s' if n_articles != 1 else ''}"
+                )
+                status.update(
+                    label=f"✅ Retrieved {n_chunks} source{'s' if n_chunks != 1 else ''}",
+                    state="complete",
+                    expanded=False,
+                )
 
+            # ── Step 2: stream the LLM answer ──────────────────────────────
+            generating_msg = st.empty()
+            generating_msg.caption("✍️ Generating answer...")
             st.subheader("Answer")
-            answer = st.write_stream(token_stream)
+            answer = st.write_stream(answer_stream(context, question))
+            generating_msg.empty()
+
         except Exception as exc:
             st.error(f"Something went wrong: {exc}")
             st.stop()

@@ -309,3 +309,35 @@ def stream_answer(
     token_stream = chain.stream({"question": question, "context": context})
 
     return token_stream, sources, hits, confidence, context
+
+
+def retrieve_context(
+    question: str,
+    k: int = DEFAULT_K,
+    chunker: str = "token",
+    use_multiquery: bool = False,
+) -> tuple:
+    """
+    Run retrieval and context-building only — no LLM call.
+
+    Use this together with answer_stream() when you want to show step-by-step
+    status updates in the UI between the retrieval and generation phases.
+
+    Returns: (hits, context, sources, confidence)
+    """
+    return _retrieve_and_build(question, k, chunker, use_multiquery)
+
+
+def answer_stream(context: str, question: str):
+    """
+    Return a LangChain token stream for a pre-built context string.
+
+    Pair with retrieve_context() to stream the LLM answer after showing
+    retrieval progress in the UI:
+
+        hits, context, sources, confidence = retrieve_context(question, ...)
+        token_stream = answer_stream(context, question)
+        answer = st.write_stream(token_stream)
+    """
+    chain = _prompt | _llm | _parser
+    return chain.stream({"question": question, "context": context})
