@@ -1,5 +1,17 @@
 import os
 import streamlit as st
+
+# Inject Streamlit secrets into os.environ so downstream modules (retrieve.py, rag.py)
+# can read credentials via os.environ regardless of whether we're running locally
+# (where python-dotenv loads a .env file) or on Streamlit Community Cloud (where
+# secrets come from st.secrets).
+try:
+    for _key in ("OPENAI_API_KEY", "QDRANT_URL", "QDRANT_API_KEY"):
+        if _key in st.secrets:
+            os.environ[_key] = st.secrets[_key]
+except Exception:
+    pass  # Running locally without secrets.toml; .env file is used instead
+
 from src.rag import retrieve_context, answer_stream, _is_refused
 from src.config import UI_DEFAULT_K
 
@@ -32,7 +44,7 @@ with st.expander("Settings", expanded=False):
             "Semantic: splits at points where meaning shifts. "
             "Parent-Child: small child chunks indexed for precision; "
             "parent chunk (~500 tok) returned to the LLM for richer context. "
-            "Semantic and Parent-Child require their indexes to be built first."
+            "Semantic and Parent-Child require their Qdrant collections to be indexed first."
         ),
     )
 
@@ -45,18 +57,6 @@ with st.expander("Settings", expanded=False):
             "at the cost of a small extra LLM call."
         ),
     )
-
-    # Warn if the selected index doesn't exist yet
-    if chunker == "semantic" and not os.path.exists("index/zvec_wiki_ml_semantic"):
-        st.warning(
-            "⚠️ Semantic index not found. Run `bash scripts/rebuild_index_semantic.sh` first, "
-            "then restart the app."
-        )
-    if chunker == "parent_child" and not os.path.exists("index/zvec_wiki_ml_parent_child"):
-        st.warning(
-            "⚠️ Parent-child index not found. Run `bash scripts/rebuild_index_parent_child.sh` first, "
-            "then restart the app."
-        )
 
 with st.form("ask_form", clear_on_submit=False):
     question = st.text_input(
@@ -112,7 +112,7 @@ if submitted:
             if sources:
                 st.subheader("Sources")
                 for s in sources:
-                    # Zvec cosine distance: lower = more similar → similarity = 1 - distance
+                    # cosine distance: lower = more similar → similarity = 1 - distance
                     similarity = f"{(1 - s['score']) * 100:.0f}%" if s.get("score") is not None else "n/a"
                     st.markdown(
                         f"**[{s['n']}] {s['title']}**  \n"

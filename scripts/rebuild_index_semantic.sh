@@ -12,9 +12,8 @@ uv run python -m src.generate_titles
 echo "=== Ingesting articles (semantic chunker) ==="
 uv run python -m src.ingest_wiki_api --chunker semantic
 
-# 2) Rebuild Zvec index for semantic chunks
-echo "=== Rebuilding semantic index ==="
-rm -rf index/zvec_wiki_ml_semantic
-uv run python -m src.index_zvec \
+# 2) Upsert into the Qdrant Cloud semantic collection (wiki_ml_semantic)
+echo "=== Indexing into Qdrant (semantic chunker) ==="
+uv run python -m src.index_qdrant \
   --chunks-file data_processed/chunks_semantic.jsonl \
-  --index-path index/zvec_wiki_ml_semantic
+  --chunker semantic

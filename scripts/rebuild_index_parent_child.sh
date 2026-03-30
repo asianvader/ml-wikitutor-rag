@@ -12,9 +12,8 @@ uv run python -m src.generate_titles
 echo "=== Ingesting articles (parent-child chunker) ==="
 uv run python -m src.ingest_wiki_api --chunker parent_child
 
-# 2) Rebuild Zvec from scratch
-echo "=== Rebuilding parent-child index ==="
-rm -rf index/zvec_wiki_ml_parent_child
-uv run python -m src.index_zvec \
-    --chunks-file data_processed/chunks_parent_child.jsonl \
-    --index-path index/zvec_wiki_ml_parent_child
+# 2) Upsert into the Qdrant Cloud parent-child collection (wiki_ml_parent_child)
+echo "=== Indexing into Qdrant (parent-child chunker) ==="
+uv run python -m src.index_qdrant \
+  --chunks-file data_processed/chunks_parent_child.jsonl \
+  --chunker parent_child

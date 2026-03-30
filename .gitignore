@@ -4,3 +4,4 @@ index/
 data_raw/
 data_processed/
 .DS_Store
+.streamlit/secrets.toml
