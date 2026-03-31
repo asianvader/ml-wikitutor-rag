@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import time
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -78,7 +79,7 @@ def main(
 
         points = [
             PointStruct(
-                id=r["id"],
+                id=str(uuid.uuid5(uuid.NAMESPACE_DNS, str(r["id"]))),
                 vector=v,
                 payload={
                     "text": r["text"],

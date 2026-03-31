@@ -69,9 +69,9 @@ class QdrantVectorStore:
         the pipeline treats lower scores as better, matching the convention
         used throughout rag.py and config.py.
         """
-        results = self._client.search(
+        response = self._client.query_points(
             collection_name=self._collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=k,
             with_payload=True,
         )
@@ -81,5 +81,5 @@ class QdrantVectorStore:
                 score=1.0 - r.score,  # similarity → distance (lower = more similar)
                 fields=r.payload or {},
             )
-            for r in results
+            for r in response.points
         ]
