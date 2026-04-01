@@ -4,6 +4,8 @@
 
 A lightweight **Retrieval-Augmented Generation (RAG)** prototype that lets you "chat" with a curated Machine Learning / Data Science / AI knowledge base built from Wikipedia articles.
 
+**Live app:** https://ml-wikitutor-rag.streamlit.app/
+
 - **Vector DB:** Qdrant Cloud
 - **Embeddings:** OpenAI (`text-embedding-3-small`)
 - **LLM:** OpenAI chat model (via `langchain_openai`)
