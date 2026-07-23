@@ -41,7 +41,7 @@ class QdrantVectorStore:
     """Thin wrapper around QdrantClient for upsert and similarity search."""
 
     def __init__(self, url: str, api_key: str, collection_name: str) -> None:
-        self._client = QdrantClient(url=url, api_key=api_key)
+        self._client = QdrantClient(url=url, api_key=api_key, timeout=60)
         self._collection_name = collection_name
 
     def create_collection_if_not_exists(self, vector_size: int = EMBEDDING_DIM) -> None:

@@ -51,6 +51,19 @@ def embed_with_retry(emb, texts, retries=5):
     return emb.embed_documents(texts)
 
 
+def upsert_with_retry(store, points, retries=5):
+    """Upsert with retry logic to ride out transient Qdrant timeouts (e.g. a freshly created cluster still warming up)."""
+    for attempt in range(retries):
+        try:
+            store.upsert(points)
+            return
+        except Exception as e:
+            wait = 2 ** attempt
+            print(f"Upsert batch failed ({type(e).__name__}). Retrying in {wait}s...")
+            time.sleep(wait)
+    store.upsert(points)
+
+
 def main(
     chunks_path: Path = DEFAULT_CHUNKS_PATH,
     chunker: str = "token",
@@ -92,7 +105,7 @@ def main(
             )
             for r, v in zip(batch, vectors)
         ]
-        store.upsert(points)
+        upsert_with_retry(store, points)
         inserted += len(points)
         print(f"Inserted {inserted}/{len(chunks)}")
 
